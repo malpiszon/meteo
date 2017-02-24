@@ -64,14 +64,7 @@ page_template = """
 </html>
 """
 
-def createJson(limit):
-  description = {
-    "timestamp": ("number", "Timestamp"),
-    "date": ("datetime", "Data"),
-    "temperature": ("number", "Temperatura"),
-    "humidity": ("number", "Wilgotność"),
-  }
-  # get the data
+def getData(start, limit):
   try:
     cs = "host=%s dbname=%s user=%s password=%s" % (config.host, config.dbname, config.user, config.password)
     conn = psycopg2.connect(cs)
@@ -80,14 +73,26 @@ def createJson(limit):
 
   cur = conn.cursor()
   if limit <= 4*24*7:
-    cur.execute('SELECT extract(epoch from date), temperature, humidity from pg order by date desc limit ' + str(limit))
+    cur.execute('SELECT extract(epoch from date), temperature, humidity from pg order by date desc limit ' + str(limit) + ' OFFSET ' + str(start))
   else:
-    cur.execute('SELECT t.* FROM (SELECT extract(epoch from date), temperature, humidity, row_number() OVER(ORDER BY date DESC) AS row from pg limit ' + str(limit) + ' ) t WHERE t.row % ' + str(limit/2920)  + ' = 0')
+    cur.execute('SELECT t.* FROM (SELECT extract(epoch from date), temperature, humidity, row_number() OVER(ORDER BY date DESC) AS row from pg limit ' + str(limit) + ' OFFSET ' + str(start) + ') t WHERE t.row % ' + str(limit/2920)  + ' = 0')
   rows = cur.fetchall()
 
   jsonData = []
   for row in rows:
     jsonData.append({'timestamp': row[0], 'date': datetime.datetime.fromtimestamp(int(row[0])), 'temperature': row[1], 'humidity': (float(row[2])/100)})
+
+  return jsonData
+
+def createJson(start, limit):
+  description = {
+    "timestamp": ("number", "Timestamp"),
+    "date": ("datetime", "Data"),
+    "temperature": ("number", "Temperatura"),
+    "humidity": ("number", "Wilgotność"),
+  }
+
+  jsonData = getData(start, limit)
 
   # Loading it into gviz_api.DataTable
   data_table = gviz_api.DataTable(description)
@@ -97,9 +102,9 @@ def createJson(limit):
 
 def main():
   # Create a JSON string.
-  json1day = createJson(4*24)
-  json7days = createJson(4*24*7)
-  json365days = createJson(4*24*365)
+  json1day = createJson(0, 4*24)
+  json7days = createJson(0, 4*24*7)
+  json365days = createJson(0, 4*24*365)
 
   # Put the JS code and JSON string into the template.
   print "Content-Type: text/html;charset=utf-8"
