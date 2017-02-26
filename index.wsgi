@@ -10,6 +10,10 @@ import gviz_api
 reload(sys)  
 sys.setdefaultencoding('utf8')
 
+path = '/var/www/meteo'
+if path not in sys.path:
+  sys.path.insert(0, path)
+
 import config
 
 page_template = """
@@ -100,17 +104,24 @@ def createJson(start, limit):
 
   return data_table.ToJSon(columns_order=("date", "temperature", "humidity"), order_by="timestamp")
 
-def main():
+#def main():
+def application(environ, start_response):
   # Create a JSON string.
   json1day = createJson(0, 4*24)
   json7days = createJson(0, 4*24*7)
   json365days = createJson(0, 4*24*365)
 
   # Put the JS code and JSON string into the template.
-  print "Content-Type: text/html;charset=utf-8"
-  print
-  print page_template % {'json1day': json1day, 'json7days': json7days, 'json365days': json365days}
+  #print "Content-Type: text/html;charset=utf-8"
+  #print
+  output = page_template.encode('utf-8') % {'json1day': json1day, 'json7days': json7days, 'json365days': json365days}
+
+  status = '200 OK'
+  response_headers = [('Content-type', 'text/html;charset=utf-8'), ('Content-Length', str(len(output)))]
+  start_response(status, response_headers)
+
+  return [output]
 
 
-if __name__ == '__main__':
-  main()
+#if __name__ == '__main__':
+#  main()
