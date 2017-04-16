@@ -7,8 +7,6 @@ import sys
 
 import config
 
-METEO_URL = "http://meteo.pg.gda.pl"
-
 def prepareData(data):
 	values = re.findall(r"[-+]?\d*\.\d+|\d+", data)
 	if len(values) == 1:
@@ -17,14 +15,14 @@ def prepareData(data):
 		return null;
 
 def insertData(conn, temp, hum):
-	query =  "INSERT INTO pg (temperature, humidity) VALUES (%s, %s);"
+	query =  "INSERT INTO %s (temperature, humidity)" % (config.dbtable) + " VALUES (%s, %s);"
 	cursor = conn.cursor()
 	data = (temp, hum)
 	cursor.execute(query, data)
 	conn.commit()
 
 try:
-	meteoSource = urllib2.urlopen(METEO_URL).readlines()
+	meteoSource = urllib2.urlopen(config.url).readlines()
 except:
 	#print "I am unable to connect to " + METEO_URL
 	sys.exit(1)

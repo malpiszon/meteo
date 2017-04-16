@@ -58,7 +58,7 @@ page_template = """
       chart.draw(data, options);
     }
   </script>
-  <title>Temperatura i wilgotność w Gdańsku Wrzeszczu</title>
+  <title>%(location)s: temperatura i wilgotność</title>
 </head>
 <body>
   <div id="chart1day"></div>
@@ -77,9 +77,9 @@ def getData(start, limit):
 
   cur = conn.cursor()
   if limit <= 4*24*7:
-    cur.execute('SELECT extract(epoch from date), temperature, humidity from pg order by date desc limit ' + str(limit) + ' OFFSET ' + str(start))
+    cur.execute('SELECT extract(epoch from date), temperature, humidity from %s order by date desc limit ' % (config.dbtable) + str(limit) + ' OFFSET ' + str(start))
   else:
-    cur.execute('SELECT t.* FROM (SELECT extract(epoch from date), temperature, humidity, row_number() OVER(ORDER BY date DESC) AS row from pg limit ' + str(limit) + ' OFFSET ' + str(start) + ') t WHERE t.row % ' + str(limit/2920)  + ' = 0')
+    cur.execute('SELECT t.* FROM (SELECT extract(epoch from date), temperature, humidity, row_number() OVER(ORDER BY date DESC) AS row from %s limit ' % (config.dbtable) + str(limit) + ' OFFSET ' + str(start) + ') t WHERE t.row % ' + str(limit/2920)  + ' = 0')
   rows = cur.fetchall()
 
   jsonData = []
@@ -114,7 +114,7 @@ def application(environ, start_response):
   # Put the JS code and JSON string into the template.
   #print "Content-Type: text/html;charset=utf-8"
   #print
-  output = page_template.encode('utf-8') % {'json1day': json1day, 'json7days': json7days, 'json365days': json365days}
+  output = page_template.encode('utf-8') % {'json1day': json1day, 'json7days': json7days, 'json365days': json365days, 'location': config.location}
 
   status = '200 OK'
   response_headers = [('Content-type', 'text/html;charset=utf-8'), ('Content-Length', str(len(output)))]
