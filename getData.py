@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Example parser written for getting data from http://meteo.pg.gda.pl
 
 import urllib2
 import re
@@ -6,6 +7,8 @@ import psycopg2
 import sys
 
 import config
+
+METEO_URL = 'http://meteo.pg.gda.pl'
 
 def prepareData(data):
 	values = re.findall(r"[-+]?\d*\.\d+|\d+", data)
@@ -22,7 +25,7 @@ def insertData(conn, temp, hum):
 	conn.commit()
 
 try:
-	meteoSource = urllib2.urlopen(config.url).readlines()
+	meteoSource = urllib2.urlopen(METEO_URL).readlines()
 except:
 	#print "I am unable to connect to " + METEO_URL
 	sys.exit(1)
